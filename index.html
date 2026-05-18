@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventário — Vale do Ave Transportes</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #0a0a0a;
+    --dark: #141414;
+    --dark2: #1e1e1e;
+    --dark3: #272727;
+    --gray-light: #b0b0b0;
+    --gray-mid: #888;
+    --gray-dim: #555;
+    --white: #f4f4f4;
+    --accent: #c0c0c0;
+    --accent2: #888;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --radius: 6px;
+    --radius-lg: 10px;
+    --shadow: 0 2px 8px rgba(0,0,0,0.5);
+    --green-bg: #0f2a0f; --green-text: #6abf6a;
+    --amber-bg: #2a1f00; --amber-text: #d4a017;
+    --red-bg: #2a0a0a; --red-text: #d46a6a;
+    --blue-bg: #0a1a2a; --blue-text: #6aaabf;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: var(--black); color: var(--white); font-size: 15px; line-height: 1.5; min-height: 100vh; }
+
+  /* TOPBAR */
+  .topbar { background: var(--dark); border-bottom: 1px solid var(--border2); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 10; flex-wrap: wrap; gap: 8px; }
+  .topbar-logo { display: flex; align-items: center; height: 44px; }
+  .topbar-logo img { height: 40px; width: auto; filter: brightness(1.1); }
+  .topbar-subtitle { font-size: 11px; color: var(--gray-mid); letter-spacing: 1.5px; text-transform: uppercase; margin-left: 14px; padding-left: 14px; border-left: 1px solid var(--border2); }
+  .topbar-divider { width: 1px; height: 28px; background: var(--border2); margin: 0 14px; }
+
+  /* SYNC BAR */
+  .sync-bar { background: var(--blue-bg); border-bottom: 1px solid rgba(106,170,191,0.2); padding: 8px 2rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .sync-bar-info { font-size: 12px; color: var(--blue-text); display: flex; align-items: center; gap: 8px; }
+  .sync-bar-info .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--blue-text); flex-shrink: 0; }
+  .sync-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* LAYOUT */
+  .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .header-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
+  .page-title { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; color: var(--white); }
+  .page-sub { font-size: 12px; color: var(--gray-mid); margin-top: 3px; letter-spacing: 0.3px; }
+
+  /* STATS */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: var(--dark2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+  .stat-label { font-size: 11px; color: var(--gray-dim); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; }
+  .stat-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; color: var(--accent); }
+  .stat-value.warn { color: var(--amber-text); }
+  .stat-value.danger { color: var(--red-text); }
+
+  /* TABS */
+  .tabs { display: flex; gap: 2px; margin-bottom: 1.5rem; background: var(--dark2); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px; width: fit-content; flex-wrap: wrap; }
+  .tab { padding: 6px 20px; border-radius: 5px; border: none; background: none; font-size: 13px; cursor: pointer; color: var(--gray-mid); font-weight: 500; transition: all 0.15s; letter-spacing: 0.3px; }
+  .tab.active { background: var(--dark3); color: var(--white); }
+  .tab:hover:not(.active) { background: var(--dark3); color: var(--gray-light); }
+  .panel { display: none; } .panel.active { display: block; }
+
+  /* TOOLBAR */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+  .toolbar input, .toolbar select { padding: 8px 12px; border: 1px solid var(--border2); border-radius: var(--radius); font-size: 13px; background: var(--dark2); color: var(--white); outline: none; }
+  .toolbar input { flex: 1; min-width: 180px; }
+  .toolbar input::placeholder { color: var(--gray-dim); }
+  .toolbar input:focus, .toolbar select:focus { border-color: var(--gray-mid); }
+  .toolbar select option { background: var(--dark2); }
+
+  /* TABLE */
+  .card { background: var(--dark); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 11px; font-weight: 600; color: var(--gray-dim); text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: 0.8px; background: var(--dark2); }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; color: var(--gray-light); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--dark2); }
+  .item-name { font-weight: 500; color: var(--white); }
+  .item-ref { font-size: 11px; color: var(--gray-dim); margin-top: 1px; }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 100px; font-size: 11px; font-weight: 600; }
+  .badge.ok { background: var(--green-bg); color: var(--green-text); border: 1px solid rgba(106,191,106,0.2); }
+  .badge.low { background: var(--amber-bg); color: var(--amber-text); border: 1px solid rgba(212,160,23,0.2); }
+  .badge.empty { background: var(--red-bg); color: var(--red-text); border: 1px solid rgba(212,106,106,0.2); }
+  .cat-badge { background: var(--dark3); color: var(--gray-mid); padding: 2px 9px; border-radius: 100px; font-size: 11px; font-weight: 500; border: 1px solid var(--border); }
+
+  /* BUTTONS */
+  .actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+  .btn { padding: 6px 14px; border-radius: var(--radius); font-size: 12px; cursor: pointer; border: 1px solid var(--border2); background: var(--dark2); color: var(--gray-light); font-weight: 500; transition: all 0.12s; letter-spacing: 0.2px; white-space: nowrap; }
+  .btn:hover { background: var(--dark3); color: var(--white); border-color: var(--gray-dim); }
+  .btn:active { transform: scale(0.97); }
+  .btn.primary { background: var(--accent); color: var(--black); border-color: var(--accent); font-weight: 600; }
+  .btn.primary:hover { background: var(--white); border-color: var(--white); }
+  .btn.danger { color: var(--red-text); border-color: rgba(212,106,106,0.3); }
+  .btn.danger:hover { background: var(--red-bg); }
+  .btn.sm { padding: 4px 10px; font-size: 11px; }
+  .btn.green { color: var(--green-text); border-color: rgba(106,191,106,0.3); }
+  .btn.green:hover { background: var(--green-bg); }
+  .btn.blue { color: var(--blue-text); border-color: rgba(106,170,191,0.3); }
+  .btn.blue:hover { background: var(--blue-bg); }
+
+  /* EMPTY */
+  .empty-state { text-align: center; padding: 4rem 1rem; color: var(--gray-dim); }
+  .empty-state .ico { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* MODAL */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+  .overlay.open { display: flex; }
+  .modal { background: var(--dark); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 1.75rem; width: calc(100% - 2rem); max-width: 480px; box-shadow: 0 16px 60px rgba(0,0,0,0.6); overflow: hidden; max-height: 90vh; overflow-y: auto; }
+  .modal h2 { font-size: 16px; font-weight: 600; margin-bottom: 1.25rem; color: var(--white); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; min-width: 0; }
+  .form-row.full { grid-template-columns: 1fr; }
+  .form-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+  @media(max-width:500px){ .form-row { grid-template-columns: 1fr; } .form-row.triple { grid-template-columns: 1fr 1fr; } }
+  .form-group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .form-group label { font-size: 11px; color: var(--gray-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; }
+  .form-group input, .form-group select { padding: 9px 11px; border: 1px solid var(--border2); border-radius: var(--radius); font-size: 13px; background: var(--dark2); color: var(--white); outline: none; font-family: inherit; width: 100%; min-width: 0; box-sizing: border-box; }
+  .form-group input::placeholder { color: var(--gray-dim); }
+  .form-group input:focus, .form-group select:focus { border-color: var(--gray-mid); }
+  .form-group select option { background: var(--dark2); }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.25rem; flex-wrap: wrap; }
+  .move-info { margin-bottom: 1rem; padding: 10px 14px; background: var(--dark2); border-radius: var(--radius); font-size: 13px; border: 1px solid var(--border); color: var(--gray-light); }
+
+  /* LOG */
+  .log-list { padding: 0 1.25rem; }
+  .log-item { padding: 12px 0; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 12px; }
+  .log-item:last-child { border-bottom: none; }
+  .log-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+  .log-dot.entrada { background: var(--green-text); }
+  .log-dot.saida { background: var(--red-text); }
+  .log-main { flex: 1; }
+  .log-title { font-size: 13px; font-weight: 500; color: var(--white); }
+  .log-meta { font-size: 11px; color: var(--gray-dim); margin-top: 2px; }
+  .log-qty { font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .log-qty.entrada { color: var(--green-text); }
+  .log-qty.saida { color: var(--red-text); }
+  .nowrap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+
+  /* IMAGE UPLOAD */
+  .img-upload-area { border: 1px dashed var(--border2); border-radius: var(--radius); padding: 10px; cursor: pointer; text-align: center; transition: border-color 0.15s; position: relative; }
+  .img-upload-area:hover { border-color: var(--gray-mid); }
+  .img-upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .img-upload-area .img-placeholder { font-size: 11px; color: var(--gray-dim); }
+  .img-preview { width: 100%; max-height: 80px; object-fit: contain; border-radius: 4px; display: block; }
+  .img-thumb { width: 36px; height: 36px; object-fit: cover; border-radius: 4px; flex-shrink: 0; background: var(--dark2); }
+
+  /* SYNC INFO BOX */
+  .info-box { background: var(--dark2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1.5rem; }
+  .info-box h3 { font-size: 14px; font-weight: 600; color: var(--white); margin-bottom: 8px; }
+  .info-box p { font-size: 12px; color: var(--gray-mid); line-height: 1.6; }
+  .info-box ol { font-size: 12px; color: var(--gray-mid); line-height: 1.8; padding-left: 16px; margin-top: 6px; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--dark3); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 10px 20px; font-size: 13px; color: var(--white); z-index: 9999; display: none; white-space: nowrap; box-shadow: var(--shadow); }
+  .toast.show { display: block; animation: toastIn 0.2s ease; }
+  @keyframes toastIn { from { opacity:0; transform: translateX(-50%) translateY(10px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+
+  /* LAST SYNC */
+  .last-sync { font-size: 11px; color: var(--gray-dim); }
+
+  @media(max-width:600px){
+    .main{padding:1rem;}
+    .form-row{grid-template-columns:1fr;}
+    .form-row.triple{grid-template-columns:1fr 1fr;}
+    .topbar{padding:0 1rem; height:auto; padding-top:12px; padding-bottom:12px;}
+    th:nth-child(4),td:nth-child(4){display:none;}
+    .topbar-subtitle{display:none;}
+    .sync-bar{padding:8px 1rem;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div style="display:flex;align-items:center">
+    <div class="topbar-logo">
+      <span style="font-size:22px;font-weight:700;letter-spacing:-0.5px;color:var(--white)">Vale do Ave</span>
+    </div>
+    <div class="topbar-divider"></div>
+    <div class="topbar-subtitle">Gestão de Inventário</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn" onclick="openCatModal()">+ Nova categoria</button>
+    <button class="btn primary" onclick="openAddModal()">+ Novo artigo</button>
+  </div>
+</div>
+
+<!-- BARRA DE SINCRONIZAÇÃO -->
+<div class="sync-bar">
+  <div class="sync-bar-info">
+    <div class="dot"></div>
+    <span>💾 Dados guardados localmente · Para partilhar entre dispositivos: <strong style="color:var(--white)">Exportar → Copiar ficheiro → Importar no outro dispositivo</strong></span>
+  </div>
+  <div class="sync-actions">
+    <button class="btn blue" onclick="exportarDados()">⬇ Exportar dados</button>
+    <button class="btn blue" onclick="document.getElementById('import-file').click()">⬆ Importar dados</button>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importarDados(event)">
+  </div>
+</div>
+
+<div class="main">
+  <div class="header-row">
+    <div>
+      <div class="page-title">Stock de Material</div>
+      <div class="page-sub" id="page-sub-info">Escritório &amp; consumíveis · Vale do Ave Transportes</div>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('stock')">Stock</button>
+    <button class="tab" onclick="switchTab('historico')">Histórico</button>
+    <button class="tab" onclick="switchTab('ajuda')">📖 Como sincronizar</button>
+  </div>
+
+  <div class="panel active" id="panel-stock">
+    <div class="toolbar">
+      <input type="text" placeholder="🔍  Pesquisar artigo ou referência..." id="search" oninput="renderTable()">
+      <select id="filter-cat" onchange="renderTable()"><option value="">Todas as categorias</option></select>
+      <select id="filter-status" onchange="renderTable()">
+        <option value="">Todos os estados</option>
+        <option value="ok">Em stock</option>
+        <option value="low">Stock baixo</option>
+        <option value="empty">Esgotado</option>
+      </select>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr>
+          <th style="width:28%">Artigo</th>
+          <th style="width:16%">Categoria</th>
+          <th style="width:13%;text-align:center">Quantidade</th>
+          <th style="width:12%;text-align:center">Mínimo</th>
+          <th style="width:13%;text-align:center">Estado</th>
+          <th style="width:18%;text-align:right">Ações</th>
+        </tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+      <div id="empty-state" class="empty-state" style="display:none"><div class="ico">📦</div><p>Ainda não há artigos. Adiciona o primeiro!</p></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-historico">
+    <div class="card">
+      <div class="log-list" id="log-list"></div>
+      <div id="log-empty" class="empty-state" style="display:none"><div class="ico">📋</div><p>Ainda não há movimentos registados.</p></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-ajuda">
+    <div class="info-box">
+      <h3>📱 Como usar no telemóvel e computador</h3>
+      <p>Esta app guarda os dados no browser (localStorage). Para sincronizar entre dispositivos, usa o sistema de exportação/importação:</p>
+      <ol>
+        <li>No computador, clica <strong>⬇ Exportar dados</strong> — descarrega um ficheiro <code>.json</code></li>
+        <li>Envia esse ficheiro para o telemóvel (WhatsApp, email, Google Drive...)</li>
+        <li>No telemóvel, abre a app e clica <strong>⬆ Importar dados</strong></li>
+        <li>Seleciona o ficheiro <code>.json</code> — os dados ficam sincronizados!</li>
+      </ol>
+    </div>
+    <div class="info-box">
+      <h3>🌐 Como hospedar online (acesso por URL)</h3>
+      <p>Para aceder à app por um link sem precisar de ficheiros:</p>
+      <ol>
+        <li>Vai a <strong>github.com</strong> e cria uma conta gratuita</li>
+        <li>Cria um repositório chamado <code>inventario-valedoave</code></li>
+        <li>Faz upload deste ficheiro HTML com o nome <code>index.html</code></li>
+        <li>Vai a <strong>Settings → Pages → Source: main branch</strong></li>
+        <li>A app fica disponível em: <code>https://[teu-utilizador].github.io/inventario-valedoave</code></li>
+      </ol>
+      <p style="margin-top:8px">⚠️ Mesmo online, cada browser guarda os seus próprios dados. Para sincronizar tens sempre de exportar/importar.</p>
+    </div>
+    <div class="info-box">
+      <h3>💡 Dica: Adicionar ao ecrã principal do telemóvel</h3>
+      <ol>
+        <li>Abre a app no browser do telemóvel (Chrome ou Safari)</li>
+        <li>Clica nas opções do browser (⋮ ou ⊞)</li>
+        <li>Escolhe <strong>"Adicionar ao ecrã principal"</strong> ou <strong>"Instalar app"</strong></li>
+        <li>A app aparece como ícone no telemóvel, como uma app normal!</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Artigo -->
+<div class="overlay" id="modal-add">
+  <div class="modal">
+    <h2 id="modal-title">Novo artigo</h2>
+    <div class="form-row full"><div class="form-group"><label>Nome do artigo *</label><input type="text" id="f-nome" placeholder="Ex: Toner HP LaserJet 107a"></div></div>
+    <div class="form-row">
+      <div class="form-group"><label>Categoria *</label>
+        <select id="f-cat"><option value="">Selecionar...</option></select>
+      </div>
+      <div class="form-group"><label>Referência</label><input type="text" id="f-ref" placeholder="Ex: HP-107A-BK"></div>
+    </div>
+    <div class="form-row triple">
+      <div class="form-group"><label>Quantidade *</label><input type="number" id="f-qty" min="0" value="1"></div>
+      <div class="form-group"><label>Stock mínimo</label><input type="number" id="f-min" min="0" value="2"></div>
+      <div class="form-group"><label>Unidade</label>
+        <select id="f-unit"><option>un</option><option>cx</option><option>resma</option><option>pack</option><option>rolo</option><option>par</option></select>
+      </div>
+    </div>
+    <div class="form-row full"><div class="form-group"><label>Notas</label><input type="text" id="f-notes" placeholder="Localização, fornecedor, observações..."></div></div>
+    <div class="form-row full">
+      <div class="form-group">
+        <label>Imagem do artigo</label>
+        <div class="img-upload-area" id="img-upload-area" onclick="document.getElementById('f-img').click()">
+          <input type="file" id="f-img" accept="image/*" onchange="handleImgUpload(event)">
+          <div id="img-preview-wrap">
+            <div class="img-placeholder">📷 Clica para carregar imagem</div>
+          </div>
+        </div>
+        <button type="button" id="img-remove-btn" onclick="removeImg()" style="display:none;margin-top:6px;font-size:11px;color:var(--red-text);background:none;border:none;cursor:pointer;padding:0;text-align:left">✕ Remover imagem</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModals()">Cancelar</button>
+      <button class="btn primary" onclick="saveArtigo()">Guardar artigo</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Movimento -->
+<div class="overlay" id="modal-move">
+  <div class="modal">
+    <h2 id="move-title">Registar movimento</h2>
+    <div class="move-info" id="move-info"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Tipo de movimento</label>
+        <select id="m-tipo" onchange="updateMoveBtn()">
+          <option value="saida">▼ Saída (retirar)</option>
+          <option value="entrada">▲ Entrada (adicionar)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Quantidade *</label><input type="number" id="m-qty" min="1" value="1"></div>
+    </div>
+    <div class="form-row full"><div class="form-group"><label>Motivo / Observação</label><input type="text" id="m-motivo" placeholder="Ex: Utilizado por João Silva..."></div></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModals()">Cancelar</button>
+      <button class="btn primary" id="move-btn" onclick="applyMove()">Registar saída</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nova Categoria -->
+<div class="overlay" id="modal-cat">
+  <div class="modal">
+    <h2>Gerir categorias</h2>
+    <div class="form-row full" style="margin-bottom:8px">
+      <div class="form-group">
+        <label>Nova categoria</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="c-nome" placeholder="Ex: Papel de Impressão" style="flex:1;min-width:0" onkeydown="if(event.key==='Enter')saveCat()">
+          <button class="btn primary" onclick="saveCat()" style="white-space:nowrap">Adicionar</button>
+        </div>
+      </div>
+    </div>
+    <div id="cat-list" style="margin-top:4px;max-height:220px;overflow-y:auto"></div>
+    <div class="modal-footer" style="margin-top:1rem">
+      <button class="btn" onclick="closeModals()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div style="position:fixed;bottom:12px;right:16px;font-size:11px;color:var(--gray-dim);letter-spacing:0.3px;pointer-events:none;user-select:none;">
+  Desenvolvido por <span style="color:var(--gray-mid);font-weight:500;">Hugo Leite</span>
+</div>
+
+<script>
+const ITEMS_KEY='vda_inv_items_v1', LOG_KEY='vda_inv_log_v1', CATS_KEY='vda_inv_cats_v1';
+const DEFAULT_CATS=['Toners','Papel','Esferográficas','Canetas','Marcadores','Pastas / Dossiers','Envelopes','Clips / Agrafos','Fita adesiva','Outros'];
+let items=[], log=[], cats=[], editId=null, moveId=null;
+
+function load(){
+  try{items=JSON.parse(localStorage.getItem(ITEMS_KEY))||[];}catch{items=[];}
+  try{log=JSON.parse(localStorage.getItem(LOG_KEY))||[];}catch{log=[];}
+  try{const s=localStorage.getItem(CATS_KEY);cats=s?JSON.parse(s):[...DEFAULT_CATS];}catch{cats=[...DEFAULT_CATS];}
+  renderAll();
+}
+function save(){
+  localStorage.setItem(ITEMS_KEY,JSON.stringify(items));
+  localStorage.setItem(LOG_KEY,JSON.stringify(log));
+  localStorage.setItem(CATS_KEY,JSON.stringify(cats));
+}
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+function status(i){if(i.qty===0)return 'empty';if(i.qty<=i.min)return 'low';return 'ok';}
+function statusLabel(s){return s==='ok'?'Em stock':s==='low'?'Stock baixo':'Esgotado';}
+
+// ========= EXPORT / IMPORT =========
+function exportarDados(){
+  const data={
+    exportedAt: new Date().toISOString(),
+    version: 1,
+    items, log, cats
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const dateStr=new Date().toISOString().slice(0,10);
+  a.href=url;
+  a.download=`inventario-valedoave-${dateStr}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ Dados exportados com sucesso!');
+}
+
+function importarDados(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!data.items||!Array.isArray(data.items)){
+        alert('Ficheiro inválido. Certifica-te que és o ficheiro exportado por esta app.');
+        return;
+      }
+      const total=data.items.length;
+      if(!confirm(`Importar ${total} artigos?\n\nATENÇÃO: Os dados atuais serão substituídos pelos dados do ficheiro.\n\nExportado em: ${data.exportedAt?new Date(data.exportedAt).toLocaleString('pt-PT'):'desconhecido'}`)){
+        e.target.value='';
+        return;
+      }
+      items=data.items||[];
+      log=data.log||[];
+      cats=data.cats||[...DEFAULT_CATS];
+      save();
+      renderAll();
+      showToast(`✅ Importado com sucesso! ${total} artigos carregados.`);
+    }catch(err){
+      alert('Erro ao ler o ficheiro. Certifica-te que é um ficheiro JSON válido.');
+    }
+    e.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+function showToast(msg, dur=3000){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+// ========= RENDER =========
+function renderStats(){
+  const ok=items.filter(i=>i.qty>i.min).length, low=items.filter(i=>i.qty>0&&i.qty<=i.min).length, empty=items.filter(i=>i.qty===0).length;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stat-label">Total artigos</div><div class="stat-value">${items.length}</div></div>
+    <div class="stat"><div class="stat-label">Em stock</div><div class="stat-value">${ok}</div></div>
+    <div class="stat"><div class="stat-label">Stock baixo</div><div class="stat-value ${low>0?'warn':''}">${low}</div></div>
+    <div class="stat"><div class="stat-label">Esgotado</div><div class="stat-value ${empty>0?'danger':''}">${empty}</div></div>`;
+}
+function renderCatFilter(){
+  const allCats=[...new Set([...cats,...items.map(i=>i.cat).filter(Boolean)])].sort();
+  const sel=document.getElementById('filter-cat'), cur=sel.value;
+  sel.innerHTML='<option value="">Todas as categorias</option>'+allCats.map(c=>`<option ${c===cur?'selected':''}>${c}</option>`).join('');
+}
+function populateCatSelect(selectedVal=''){
+  const sel=document.getElementById('f-cat');
+  const allCats=[...new Set([...cats,...items.map(i=>i.cat).filter(Boolean)])].sort();
+  sel.innerHTML='<option value="">Selecionar...</option>'+allCats.map(c=>`<option ${c===selectedVal?'selected':''}>${c}</option>`).join('');
+}
+function renderTable(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const cat=document.getElementById('filter-cat').value;
+  const st=document.getElementById('filter-status').value;
+  const list=items.filter(i=>{
+    if(q&&!i.name.toLowerCase().includes(q)&&!(i.ref||'').toLowerCase().includes(q))return false;
+    if(cat&&i.cat!==cat)return false;
+    if(st&&status(i)!==st)return false;
+    return true;
+  });
+  const tb=document.getElementById('table-body');
+  if(!list.length){tb.innerHTML='';document.getElementById('empty-state').style.display='block';return;}
+  document.getElementById('empty-state').style.display='none';
+  tb.innerHTML=list.map(item=>{const s=status(item);return`<tr>
+    <td>
+      <div style="display:flex;align-items:center;gap:10px">
+        ${item.img?`<img src="${item.img}" class="img-thumb" alt="">`:`<div class="img-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--gray-dim);font-size:16px">📦</div>`}
+        <div style="min-width:0">
+          <div class="item-name nowrap">${item.name}</div>
+          ${item.ref?`<div class="item-ref">${item.ref}</div>`:''}${item.notes?`<div class="item-ref">📍 ${item.notes}</div>`:''}
+        </div>
+      </div>
+    </td>
+    <td><span class="cat-badge">${item.cat}</span></td>
+    <td style="text-align:center;font-weight:600;color:var(--white)">${item.qty} <span style="font-size:11px;color:var(--gray-dim);font-weight:400">${item.unit}</span></td>
+    <td style="text-align:center;color:var(--gray-dim)">${item.min} ${item.unit}</td>
+    <td style="text-align:center"><span class="badge ${s}">${statusLabel(s)}</span></td>
+    <td><div class="actions">
+      <button class="btn sm green" onclick="openMove('${item.id}')">Movimento</button>
+      <button class="btn sm" onclick="editItem('${item.id}')">Editar</button>
+      <button class="btn sm danger" onclick="deleteItem('${item.id}')">✕</button>
+    </div></td>
+  </tr>`;}).join('');
+}
+function renderLog(){
+  const el=document.getElementById('log-list'), empty=document.getElementById('log-empty');
+  if(!log.length){el.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  el.innerHTML=[...log].reverse().slice(0,100).map(l=>`
+    <div class="log-item">
+      <div class="log-dot ${l.tipo}"></div>
+      <div class="log-main">
+        <div class="log-title">${l.itemName}${l.ref?` <span style="font-size:11px;color:var(--gray-dim)">${l.ref}</span>`:''}</div>
+        <div class="log-meta">${l.data}${l.motivo?' · '+l.motivo:''} · Stock após: ${l.stockAfter} ${l.unit}</div>
+      </div>
+      <div class="log-qty ${l.tipo}">${l.tipo==='entrada'?'+':'-'}${l.qty} ${l.unit}</div>
+    </div>`).join('');
+}
+function renderAll(){renderStats();renderCatFilter();renderTable();}
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['stock','historico','ajuda'][i]===tab));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  if(tab==='historico')renderLog();
+}
+function openAddModal(){
+  editId=null;document.getElementById('modal-title').textContent='Novo artigo';
+  ['f-nome','f-ref','f-notes'].forEach(id=>document.getElementById(id).value='');
+  populateCatSelect();
+  document.getElementById('f-qty').value=1;
+  document.getElementById('f-min').value=2;document.getElementById('f-unit').value='un';
+  resetImgPreview();
+  document.getElementById('modal-add').classList.add('open');
+  setTimeout(()=>document.getElementById('f-nome').focus(),50);
+}
+function editItem(id){
+  const item=items.find(i=>i.id===id);if(!item)return;
+  editId=id;document.getElementById('modal-title').textContent='Editar artigo';
+  document.getElementById('f-nome').value=item.name;document.getElementById('f-ref').value=item.ref||'';
+  populateCatSelect(item.cat);
+  document.getElementById('f-qty').value=item.qty;
+  document.getElementById('f-min').value=item.min;document.getElementById('f-unit').value=item.unit;
+  document.getElementById('f-notes').value=item.notes||'';
+  if(item.img){setImgPreview(item.img);}else{resetImgPreview();}
+  document.getElementById('modal-add').classList.add('open');
+}
+function saveArtigo(){
+  const name=document.getElementById('f-nome').value.trim(), cat=document.getElementById('f-cat').value;
+  if(!name){alert('O nome do artigo é obrigatório.');return;}
+  if(!cat){alert('Seleciona uma categoria.');return;}
+  const imgEl=document.getElementById('img-preview-wrap').querySelector('img');
+  const img=imgEl?imgEl.src:'';
+  const data={name,cat,ref:document.getElementById('f-ref').value.trim(),qty:parseInt(document.getElementById('f-qty').value)||0,min:parseInt(document.getElementById('f-min').value)||0,unit:document.getElementById('f-unit').value,notes:document.getElementById('f-notes').value.trim(),img};
+  if(editId){const idx=items.findIndex(i=>i.id===editId);items[idx]={...items[idx],...data};}
+  else items.push({id:genId(),...data,createdAt:new Date().toISOString()});
+  save();closeModals();renderAll();
+  showToast('✅ Artigo guardado!');
+}
+function handleImgUpload(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{setImgPreview(ev.target.result);};
+  reader.readAsDataURL(file);
+}
+function setImgPreview(src){
+  document.getElementById('img-preview-wrap').innerHTML=`<img src="${src}" class="img-preview" alt="Pré-visualização">`;
+  document.getElementById('img-remove-btn').style.display='block';
+}
+function resetImgPreview(){
+  document.getElementById('img-preview-wrap').innerHTML='<div class="img-placeholder">📷 Clica para carregar imagem</div>';
+  document.getElementById('img-remove-btn').style.display='none';
+  document.getElementById('f-img').value='';
+}
+function removeImg(){resetImgPreview();}
+function openMove(id){
+  moveId=id;const item=items.find(i=>i.id===id);
+  document.getElementById('move-title').textContent='Movimento — '+item.name;
+  document.getElementById('move-info').innerHTML=`<strong style="color:var(--white)">${item.name}</strong>${item.ref?` <span style="color:var(--gray-dim)">(${item.ref})</span>`:''}<br>Stock atual: <strong style="color:var(--accent)">${item.qty} ${item.unit}</strong> · Mínimo: ${item.min} ${item.unit}`;
+  document.getElementById('m-tipo').value='saida';document.getElementById('m-qty').value=1;document.getElementById('m-motivo').value='';
+  updateMoveBtn();document.getElementById('modal-move').classList.add('open');
+  setTimeout(()=>document.getElementById('m-qty').focus(),50);
+}
+function updateMoveBtn(){document.getElementById('move-btn').textContent=document.getElementById('m-tipo').value==='saida'?'Registar saída':'Registar entrada';}
+function applyMove(){
+  const item=items.find(i=>i.id===moveId);if(!item)return;
+  const tipo=document.getElementById('m-tipo').value, qty=parseInt(document.getElementById('m-qty').value)||0;
+  if(qty<=0){alert('Indica uma quantidade válida.');return;}
+  if(tipo==='saida'&&qty>item.qty){alert(`Stock insuficiente.\nStock atual: ${item.qty} ${item.unit}\nSolicitado: ${qty} ${item.unit}`);return;}
+  item.qty=tipo==='saida'?item.qty-qty:item.qty+qty;
+  const now=new Date();
+  log.push({id:genId(),itemId:item.id,itemName:item.name,ref:item.ref||'',tipo,qty,unit:item.unit,motivo:document.getElementById('m-motivo').value.trim(),stockAfter:item.qty,data:now.toLocaleDateString('pt-PT')+' '+now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})});
+  save();closeModals();renderAll();
+  showToast(`✅ Movimento registado!`);
+}
+function deleteItem(id){
+  const item=items.find(i=>i.id===id);
+  if(!confirm(`Eliminar "${item.name}"?\n\nEsta ação não pode ser desfeita.`))return;
+  items=items.filter(i=>i.id!==id);save();renderAll();
+}
+function openCatModal(){
+  document.getElementById('c-nome').value='';
+  renderCatList();
+  document.getElementById('modal-cat').classList.add('open');
+  setTimeout(()=>document.getElementById('c-nome').focus(),50);
+}
+function renderCatList(){
+  const el=document.getElementById('cat-list');
+  if(!cats.length){el.innerHTML='<div style="font-size:13px;color:var(--gray-dim);padding:8px 0">Sem categorias personalizadas.</div>';return;}
+  el.innerHTML=cats.map((c,i)=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+      <span style="color:var(--gray-light)">${c}</span>
+      <button class="btn sm danger" onclick="deleteCat(${i})" style="flex-shrink:0">✕</button>
+    </div>`).join('');
+}
+function saveCat(){
+  const name=document.getElementById('c-nome').value.trim();
+  if(!name)return;
+  if(cats.includes(name)){alert('Essa categoria já existe.');return;}
+  cats.push(name);
+  save();renderCatList();renderCatFilter();
+  document.getElementById('c-nome').value='';
+  document.getElementById('c-nome').focus();
+}
+function deleteCat(idx){
+  const name=cats[idx];
+  const inUse=items.some(i=>i.cat===name);
+  if(inUse&&!confirm(`A categoria "${name}" está a ser usada por artigos existentes. Eliminar mesmo assim?`))return;
+  cats.splice(idx,1);
+  save();renderCatList();renderCatFilter();
+}
+function closeModals(){document.querySelectorAll('.overlay').forEach(m=>m.classList.remove('open'));}
+document.querySelectorAll('.overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModals();}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModals();});
+load();
+</script>
+</body>
+</html>
